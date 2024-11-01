@@ -14,6 +14,7 @@ private:
     int rows, cols;                    // Размеры поля
     int moves;                         // Количество ходов
     time_t startTime;                  // Время начала игры
+    int lives;                         // Количество жизней
 
     // Генерация случайного размещения карт
     void shuffleBoard() {
@@ -37,7 +38,7 @@ private:
     }
 
 public:
-    MemoryGame(int r, int c) : rows(r), cols(c), moves(0) {
+    MemoryGame(int r, int c, int l) : rows(r), cols(c), moves(0), lives(l) {
         board.resize(rows, vector<int>(cols));
         revealed.resize(rows, vector<bool>(cols, false));
         shuffleBoard();
@@ -65,8 +66,10 @@ public:
             revealed[r1][c1] = true;
             revealed[r2][c2] = true;
             return true;  // Карты совпали
+        } else {
+            lives--;  // Уменьшаем количество жизней при несовпадении
+            return false;  // Карты не совпали
         }
-        return false;  // Карты не совпали
     }
 
     // Основной игровой процесс
@@ -74,14 +77,19 @@ public:
         int r1, c1, r2, c2;
         bool gameOver = false;
 
-        while (!gameOver) {
+        while (!gameOver && lives > 0) {
             system("cls");  // Очистка экрана
             printBoard();   // Вывод текущего состояния поля
+            cout << "Осталось жизней: " << lives << endl;
 
-            cout << "Введите координаты первой карты (строка и столбец): ";
+            cout << "Введите координаты первой карты (строка и столбец, начиная с 1): ";
             cin >> r1 >> c1;
-            cout << "Введите координаты второй карты (строка и столбец): ";
+            cout << "Введите координаты второй карты (строка и столбец, начиная с 1): ";
             cin >> r2 >> c2;
+
+            // Корректируем индексы, так как пользователь вводит их с 1, а не с 0
+            r1--; c1--;
+            r2--; c2--;
 
             if (revealCards(r1, c1, r2, c2)) {
                 cout << "Карты совпали! Вы можете играть дальше." << endl;
@@ -102,24 +110,36 @@ public:
 
         time_t endTime = time(0);
         int gameTime = difftime(endTime, startTime);  // Подсчёт времени игры
-        cout << "Игра окончена! Время игры: " << gameTime << " секунд." << endl;
+
+        if (lives == 0) {
+            cout << "Игра окончена! У вас закончились жизни." << endl;
+        } else {
+            cout << "Игра окончена! Вы нашли все пары." << endl;
+        }
+
+        cout << "Время игры: " << gameTime << " секунд." << endl;
         cout << "Количество переворотов карт: " << moves << endl;
     }
 };
 
 int main() {
     srand(time(0));  // Инициализация генератора случайных чисел
-    int rows, cols;
+    int rows = 4, cols = 4;  // Поле 4x4 по умолчанию
+    int levelChoice;
+    int lives;
 
-    cout << "Введите количество строк и столбцов: ";
-    cin >> rows >> cols;
+    cout << "Выберите уровень сложности (1 - Лёгкий, 2 - Средний, 3 - Сложный): ";
+    cin >> levelChoice;
 
-    if (rows * cols % 2 != 0) {
-        cout << "Количество карт должно быть чётным." << endl;
-        return 1;
+    if (levelChoice == 1) {
+        lives = 10;  // Лёгкий уровень
+    } else if (levelChoice == 2) {
+        lives = 6;   // Средний уровень
+    } else {
+        lives = 3;   // Сложный уровень
     }
 
-    MemoryGame game(rows, cols);
+    MemoryGame game(rows, cols, lives);
     game.play();
 
     return 0;
