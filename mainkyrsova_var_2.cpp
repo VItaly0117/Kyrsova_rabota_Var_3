@@ -2,8 +2,10 @@
 #include <vector>
 #include <cstdlib>
 #include <ctime>
-#include <algorithm>  // Для std::shuffle
-#include <random>     // Для генератора случайных чисел
+#include <algorithm>
+#include <random>
+#include <thread>      // Для создания задержки (sleep)
+#include <chrono>      // Для задания длительности задержки
 
 using namespace std;
 
@@ -20,14 +22,12 @@ private:
     void shuffleBoard() {
         vector<int> cards;
         for (int i = 0; i < (rows * cols) / 2; ++i) {
-            cards.push_back(i);         // Создаём пары карт
+            cards.push_back(i);
             cards.push_back(i);
         }
-
-        // Используем std::shuffle с генератором случайных чисел
-        random_device rd;               // Источник случайных чисел
-        mt19937 g(rd());                // Генератор случайных чисел
-        shuffle(cards.begin(), cards.end(), g);  // Перемешиваем карты
+        random_device rd;
+        mt19937 g(rd());
+        shuffle(cards.begin(), cards.end(), g);
 
         int index = 0;
         for (int i = 0; i < rows; ++i) {
@@ -42,7 +42,7 @@ public:
         board.resize(rows, vector<int>(cols));
         revealed.resize(rows, vector<bool>(cols, false));
         shuffleBoard();
-        startTime = time(0); // Запускаем таймер
+        startTime = time(0);
     }
 
     // Отображение поля на экране
@@ -50,25 +50,36 @@ public:
         for (int i = 0; i < rows; ++i) {
             for (int j = 0; j < cols; ++j) {
                 if (revealed[i][j]) {
-                    cout << board[i][j] << " ";  // Показываем карту, если она открыта
+                    cout << board[i][j] << " ";
                 } else {
-                    cout << "* ";               // Закрытая карта
+                    cout << "* ";
                 }
             }
             cout << endl;
         }
     }
 
+    // Эффект открытия карты
+    void revealEffect(int r, int c) {
+        cout << "Открытие карты на позиции (" << r + 1 << ", " << c + 1 << ")..." << endl;
+        revealed[r][c] = true;
+        printBoard();
+        this_thread::sleep_for(chrono::milliseconds(500));  // Задержка в 500 мс для имитации анимации
+    }
+
     // Открытие двух карт
     bool revealCards(int r1, int c1, int r2, int c2) {
-        moves++;  // Увеличиваем счётчик ходов
+        moves++;
+        revealEffect(r1, c1);  // Показ первой карты с эффектом
+        revealEffect(r2, c2);  // Показ второй карты с эффектом
+
         if (board[r1][c1] == board[r2][c2]) {
-            revealed[r1][c1] = true;
-            revealed[r2][c2] = true;
-            return true;  // Карты совпали
+            return true;
         } else {
-            lives--;  // Уменьшаем количество жизней при несовпадении
-            return false;  // Карты не совпали
+            revealed[r1][c1] = false;
+            revealed[r2][c2] = false;
+            lives--;
+            return false;
         }
     }
 
@@ -78,8 +89,8 @@ public:
         bool gameOver = false;
 
         while (!gameOver && lives > 0) {
-            system("cls");  // Очистка экрана
-            printBoard();   // Вывод текущего состояния поля
+            system("cls");
+            printBoard();
             cout << "Осталось жизней: " << lives << endl;
 
             cout << "Введите координаты первой карты (строка и столбец, начиная с 1): ";
@@ -87,7 +98,6 @@ public:
             cout << "Введите координаты второй карты (строка и столбец, начиная с 1): ";
             cin >> r2 >> c2;
 
-            // Корректируем индексы, так как пользователь вводит их с 1, а не с 0
             r1--; c1--;
             r2--; c2--;
 
@@ -95,9 +105,9 @@ public:
                 cout << "Карты совпали! Вы можете играть дальше." << endl;
             } else {
                 cout << "Карты не совпали. Попробуйте снова." << endl;
+                this_thread::sleep_for(chrono::milliseconds(1000));  // Короткая пауза перед продолжением
             }
-            
-            // Проверяем, остались ли ещё закрытые карты
+
             gameOver = true;
             for (int i = 0; i < rows; ++i) {
                 for (int j = 0; j < cols; ++j) {
@@ -109,7 +119,7 @@ public:
         }
 
         time_t endTime = time(0);
-        int gameTime = difftime(endTime, startTime);  // Подсчёт времени игры
+        int gameTime = difftime(endTime, startTime);
 
         if (lives == 0) {
             cout << "Игра окончена! У вас закончились жизни." << endl;
@@ -123,8 +133,8 @@ public:
 };
 
 int main() {
-    srand(time(0));  // Инициализация генератора случайных чисел
-    int rows = 4, cols = 4;  // Поле 4x4 по умолчанию
+    srand(time(0));
+    int rows = 4, cols = 4;
     int levelChoice;
     int lives;
 
@@ -132,11 +142,11 @@ int main() {
     cin >> levelChoice;
 
     if (levelChoice == 1) {
-        lives = 10;  // Лёгкий уровень
+        lives = 10;
     } else if (levelChoice == 2) {
-        lives = 6;   // Средний уровень
+        lives = 6;
     } else {
-        lives = 3;   // Сложный уровень
+        lives = 3;
     }
 
     MemoryGame game(rows, cols, lives);
